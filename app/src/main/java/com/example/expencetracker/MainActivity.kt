@@ -13,6 +13,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.expencetracker.data.Expense
 import com.example.expencetracker.data.ExpenseDao
 import com.example.expencetracker.data.ExpenseDatabase
@@ -37,8 +38,15 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         expenseDao = ExpenseDatabase.getDatabase(this).expenseDao()
+
+        // Set up RecyclerView
+        val adapter = ExpenseAdapter(expenses)
+        binding.expenseRecyclerView.layoutManager = LinearLayoutManager(this)
+        binding.expenseRecyclerView.adapter = adapter
+
+        // Add Expense Button
         binding.addExpenseButton.setOnClickListener { showAddExpenseDialog() }
-        observeAllExpenses()
+        observeAllExpenses(adapter)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -88,6 +96,15 @@ class MainActivity : AppCompatActivity() {
         expenseDao.getAllExpenses().observe(this) { allExpenses ->
             expenses.clear()
             expenses.addAll(allExpenses)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun observeAllExpenses(adapter: ExpenseAdapter) {
+        expenseDao.getAllExpenses().observe(this) { allExpenses ->
+            expenses.clear()
+            expenses.addAll(allExpenses)
+            adapter.notifyDataSetChanged()
         }
     }
 }

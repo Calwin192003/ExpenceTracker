@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/bg_item_card"
+    android:layout_marginVertical="8dp"
+    android:elevation="2dp">
+
+    <TextView
+        android:id="@+id/textViewAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="₹100"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#2E7D32" />
+
+    <TextView
+        android:id="@+id/textViewCategory"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Food"
+        android:textStyle="italic"
+        android:textColor="#616161"
+        android:layout_marginTop="4dp"/>
+
+    <TextView
+        android:id="@+id/textViewNote"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lunch at Cafe"
+        android:layout_marginTop="4dp"
+        android:textColor="#424242" />
+
+    <TextView
+        android:id="@+id/textViewDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="April 21, 2025"
+        android:textSize="12sp"
+        android:textColor="#9E9E9E"
+        android:layout_marginTop="4dp" />
+</LinearLayout>
