@@ -10,8 +10,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class ExpenseAdapter(private val expenses: List<Expense>) :
-    RecyclerView.Adapter<ExpenseAdapter.ExpenseViewHolder>() {
+class ExpenseAdapter(
+    private val expenses: List<Expense>,
+    private val onDeleteClick: (Expense) -> Unit
+) : RecyclerView.Adapter<ExpenseAdapter.ExpenseViewHolder>() {
 
     inner class ExpenseViewHolder(val binding: ItemExpenseBinding) :
         RecyclerView.ViewHolder(binding.root)
@@ -28,14 +30,18 @@ class ExpenseAdapter(private val expenses: List<Expense>) :
             textViewCategory.text = expense.category
             textViewDate.text = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(Date(expense.date))
 
-            // Hide category TextView if blank
             if (expense.note.isNullOrBlank()) {
                 textViewNote.visibility = View.GONE
             } else {
                 textViewNote.text = expense.note
                 textViewNote.visibility = View.VISIBLE
             }
+
+            imageViewDelete.setOnClickListener {
+                onDeleteClick(expense)
+            }
         }
     }
+
     override fun getItemCount(): Int = expenses.size
 }

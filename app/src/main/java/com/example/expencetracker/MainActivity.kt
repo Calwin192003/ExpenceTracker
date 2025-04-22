@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var expenseDao: ExpenseDao
     private val expenses = mutableListOf<Expense>()
+    private var allExpenses = mutableListOf<Expense>()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +48,12 @@ class MainActivity : AppCompatActivity() {
 
         expenseDao = ExpenseDatabase.getDatabase(this).expenseDao()
 
-        val adapter = ExpenseAdapter(expenses)
+        val adapter = ExpenseAdapter(expenses) { expenseToDelete ->
+            lifecycleScope.launch {
+                expenseDao.delete(expenseToDelete)
+                Toast.makeText(this@MainActivity, "Expense deleted", Toast.LENGTH_SHORT).show()
+            }
+        }
         binding.expenseRecyclerView.layoutManager = LinearLayoutManager(this)
         binding.expenseRecyclerView.adapter = adapter
 
@@ -113,12 +119,30 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun observeAllExpenses(adapter: ExpenseAdapter) {
         expenseDao.getAllExpenses().observe(this) { allExpenses ->
-            expenses.clear()
-            expenses.addAll(allExpenses)
-            setupCalendar(expenses)
-            adapter.notifyDataSetChanged()
+            this.allExpenses = allExpenses.toMutableList() // optional cache
+            setupCalendar(allExpenses)
+
+            binding.calendarView.post {
+                val visibleMonth = binding.calendarView.findFirstVisibleMonth()?.yearMonth ?: YearMonth.now()
+                updateDisplayedExpenses(adapter, visibleMonth)
+            }
         }
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun updateDisplayedExpenses(adapter: ExpenseAdapter, yearMonth: YearMonth) {
+        val startOfMonth = yearMonth.atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val endOfMonth = yearMonth.atEndOfMonth().atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+        val filtered = allExpenses.filter {
+            it.date in startOfMonth..endOfMonth
+        }.sortedByDescending { it.date }
+
+        expenses.clear()
+        expenses.addAll(filtered)
+        adapter.notifyDataSetChanged()
+    }
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun setupCalendar(expenseList: List<Expense>) {
@@ -133,6 +157,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.calendarView.monthScrollListener = { month ->
             binding.tvMonthTitle.text = formatYearMonth(month.yearMonth)
+            updateDisplayedExpenses(binding.expenseRecyclerView.adapter as ExpenseAdapter, month.yearMonth)
         }
 
         val expensesByDate = expenseList.groupBy {
