@@ -6,4 +6,12 @@
     </style>
 
     <style name="Theme.ExpenceTracker" parent="Base.Theme.ExpenceTracker" />
+    <style name="Theme.MyApp" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <!-- Your theme settings -->
+    </style>
+    <style name="RoundedFAB" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">30dp</item>
+        <item name="android:layout_gravity">center</item>
+    </style>
 </resources>

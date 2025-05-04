@@ -1,6 +1,7 @@
 // MainActivity.kt
 package com.example.expencetracker
 
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -21,6 +22,7 @@ import com.example.expencetracker.data.ExpenseDatabase
 import com.example.expencetracker.databinding.ActivityMainBinding
 import com.example.expencetracker.databinding.DialogAddExpenseBinding
 import com.kizitonwose.calendar.core.CalendarDay
+import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.daysOfWeek
 import com.kizitonwose.calendar.view.ViewContainer
 import com.kizitonwose.calendar.view.MonthDayBinder
@@ -75,7 +77,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun showAddExpenseDialog() {
+    private fun showAddExpenseDialog(preSelectedDate: LocalDate? = null) {
         val dialogBinding = DialogAddExpenseBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(this)
             .setTitle("Add Expense")
@@ -89,7 +91,10 @@ class MainActivity : AppCompatActivity() {
                 val day = dialogBinding.datePicker.dayOfMonth
                 val month = dialogBinding.datePicker.month
                 val year = dialogBinding.datePicker.year
-                val selectedDateMillis = LocalDate.of(year, month + 1, day).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                val selectedDateMillis = LocalDate.of(year, month + 1, day)
+                    .atStartOfDay(ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli()
 
                 if (amount != null && selectedCategory != null) {
                     val expense = Expense(
@@ -114,6 +119,10 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Cancel", null)
             .create()
         dialog.show()
+
+        preSelectedDate?.let { date ->
+            dialogBinding.datePicker.updateDate(date.year, date.monthValue - 1, date.dayOfMonth)
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -179,6 +188,12 @@ class MainActivity : AppCompatActivity() {
             override fun create(view: View) = DayViewContainer(view)
 
             override fun bind(container: DayViewContainer, day: CalendarDay) {
+                container.textViewDate.text = day.date.dayOfMonth.toString()
+                if (day.position == DayPosition.MonthDate) {
+                    container.textViewDate.setTextColor(Color.BLACK)
+                } else {
+                    container.textViewDate.setTextColor(Color.GRAY)
+                }
                 val date = day.date
                 container.textViewDate.text = date.dayOfMonth.toString()
 
@@ -186,6 +201,10 @@ class MainActivity : AppCompatActivity() {
                 container.textViewTotal.apply {
                     visibility = if (total > 0) View.VISIBLE else View.GONE
                     text = "₹%.0f".format(total)
+                }
+
+                container.view.setOnClickListener {
+                    showAddExpenseDialog(preSelectedDate = date)
                 }
             }
         }
