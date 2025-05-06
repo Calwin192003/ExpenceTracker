@@ -48,13 +48,26 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Entertainment" />
+            <RadioButton
+                android:id="@+id/radioAddCategory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Add Category" />
         </RadioGroup>
 
-        <DatePicker
-            android:id="@+id/datePicker"
+        <EditText
+            android:id="@+id/editTextCustomCategory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter custom category"
+            android:inputType="textCapWords"
+            android:visibility="gone"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:id="@+id/textViewSelectedDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:calendarViewShown="true" />
-    </LinearLayout>
+            android:text="Date:" />    </LinearLayout>
 </ScrollView>

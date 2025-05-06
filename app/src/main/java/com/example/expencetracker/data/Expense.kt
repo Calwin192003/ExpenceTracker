@@ -9,6 +9,6 @@ data class Expense(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val amount: Double,
     val note: String,
-    val category: String,
+    val category: String?,
     val date: Long
 )

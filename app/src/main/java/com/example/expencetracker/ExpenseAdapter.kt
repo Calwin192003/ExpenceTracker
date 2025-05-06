@@ -27,16 +27,20 @@ class ExpenseAdapter(
         val expense = expenses[position]
         with(holder.binding) {
             textViewAmount.text = "₹%.2f".format(expense.amount)
-            textViewCategory.text = expense.category
             textViewDate.text = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(Date(expense.date))
 
+            if (expense.category.isNullOrBlank()) {
+                textViewCategory.visibility = View.GONE
+            } else {
+                textViewCategory.text = expense.category
+                textViewCategory.visibility = View.VISIBLE
+            }
             if (expense.note.isNullOrBlank()) {
                 textViewNote.visibility = View.GONE
             } else {
                 textViewNote.text = expense.note
                 textViewNote.visibility = View.VISIBLE
             }
-
             imageViewDelete.setOnClickListener {
                 onDeleteClick(expense)
             }
