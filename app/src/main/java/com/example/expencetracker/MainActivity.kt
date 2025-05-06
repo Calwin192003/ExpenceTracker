@@ -108,6 +108,7 @@ class MainActivity : AppCompatActivity() {
         val formattedDate = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("dd MMMM yyyy"))
         dialogBinding.textViewSelectedDate.text = "Selected Date: $formattedDate"
 
+        existingExpense?.let {
             dialogBinding.editTextAmount.setText(it.amount.toString())
             dialogBinding.editTextNote.setText(it.note)
 
