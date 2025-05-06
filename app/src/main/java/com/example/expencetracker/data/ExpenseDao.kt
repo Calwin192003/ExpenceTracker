@@ -12,6 +12,9 @@ interface ExpenseDao {
     @Delete
     suspend fun delete(expense: Expense)
 
+    @Update
+    suspend fun update(expense: Expense)
+
     @Query("SELECT * FROM expenses")
     fun getAllExpenses(): LiveData<List<Expense>>
 

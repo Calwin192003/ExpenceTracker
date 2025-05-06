@@ -12,7 +12,8 @@ import java.util.Locale
 
 class ExpenseAdapter(
     private val expenses: List<Expense>,
-    private val onDeleteClick: (Expense) -> Unit
+    private val onDeleteClick: (Expense) -> Unit,
+    private val onItemClicked: (Expense) -> Unit
 ) : RecyclerView.Adapter<ExpenseAdapter.ExpenseViewHolder>() {
 
     inner class ExpenseViewHolder(val binding: ItemExpenseBinding) :
@@ -43,6 +44,9 @@ class ExpenseAdapter(
             }
             imageViewDelete.setOnClickListener {
                 onDeleteClick(expense)
+            }
+            itemView.setOnClickListener {
+                onItemClicked(expense) 
             }
         }
     }

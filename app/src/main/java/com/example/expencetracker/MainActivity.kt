@@ -52,14 +52,24 @@ class MainActivity : AppCompatActivity() {
 
         totalAmountTextView = binding.tvTotalAmount
 
-        adapter = ExpenseAdapter(expenses) { expenseToDelete ->
-            lifecycleScope.launch {
-                expenseDao.delete(expenseToDelete)
-                expenses.remove(expenseToDelete)
-                Toast.makeText(this@MainActivity, "Expense deleted", Toast.LENGTH_SHORT).show()
-                updateDisplayedExpenses(adapter, binding.calendarView.findFirstVisibleMonth()?.yearMonth ?: YearMonth.now())
+        adapter = ExpenseAdapter(
+            expenses,
+            onDeleteClick = { expenseToDelete ->
+                lifecycleScope.launch {
+                    expenseDao.delete(expenseToDelete)
+                    expenses.remove(expenseToDelete)
+                    Toast.makeText(this@MainActivity, "Expense deleted", Toast.LENGTH_SHORT).show()
+                    updateDisplayedExpenses(adapter, binding.calendarView.findFirstVisibleMonth()?.yearMonth ?: YearMonth.now())
+                }
+            },
+            onItemClicked = { expenseToEdit ->
+                showAddExpenseDialog(
+                    preSelectedDate = Instant.ofEpochMilli(expenseToEdit.date).atZone(ZoneId.systemDefault()).toLocalDate(),
+                    existingExpense = expenseToEdit
+                )
             }
-        }
+        )
+
         binding.expenseRecyclerView.layoutManager = LinearLayoutManager(this)
         binding.expenseRecyclerView.adapter = adapter
 
@@ -81,7 +91,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun showAddExpenseDialog(preSelectedDate: LocalDate? = null) {
+    private fun showAddExpenseDialog(preSelectedDate: LocalDate? = null, existingExpense: Expense? = null) {
         val dialogBinding = DialogAddExpenseBinding.inflate(layoutInflater)
 
         dialogBinding.editTextCustomCategory.visibility = View.GONE
@@ -98,6 +108,23 @@ class MainActivity : AppCompatActivity() {
         val formattedDate = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("dd MMMM yyyy"))
         dialogBinding.textViewSelectedDate.text = "Selected Date: $formattedDate"
 
+            dialogBinding.editTextAmount.setText(it.amount.toString())
+            dialogBinding.editTextNote.setText(it.note)
+
+            val categoryMatch = dialogBinding.radioGroupCategory.children
+                .filterIsInstance<RadioButton>()
+                .firstOrNull { radio -> radio.text.toString().equals(it.category, ignoreCase = true) }
+
+            if (categoryMatch != null) {
+                categoryMatch.isChecked = true
+                dialogBinding.editTextCustomCategory.visibility = View.GONE
+            } else {
+                dialogBinding.radioGroupCategory.check(R.id.radioAddCategory) // Make sure this ID exists
+                dialogBinding.editTextCustomCategory.visibility = View.VISIBLE
+                dialogBinding.editTextCustomCategory.setText(it.category)
+            }
+        }
+
         val dialog = AlertDialog.Builder(this)
             .setTitle("Add Expense")
             .setView(dialogBinding.root)
@@ -113,13 +140,18 @@ class MainActivity : AppCompatActivity() {
                     selectedCategory = dialogBinding.editTextCustomCategory.text.toString().ifBlank { null }
                 }
 
-                val selectedDate = preSelectedDate ?: LocalDate.now()
-                val selectedDateMillis = selectedDate.atStartOfDay(ZoneId.systemDefault())
+                val finalDate = preSelectedDate ?: LocalDate.now()
+                val selectedDateMillis = finalDate.atStartOfDay(ZoneId.systemDefault())
                     .toInstant()
                     .toEpochMilli()
 
-                if (amount != null) {
-                    val expense = Expense(
+                if (amount != null && selectedCategory != null) {
+                    val expenseToSave = existingExpense?.copy(
+                        amount = amount,
+                        note = note,
+                        category = selectedCategory,
+                        date = selectedDateMillis
+                    ) ?: Expense(
                         amount = amount,
                         note = note,
                         category = selectedCategory,
@@ -127,16 +159,22 @@ class MainActivity : AppCompatActivity() {
                     )
                     lifecycleScope.launch {
                         try {
-                            expenseDao.insert(expense)
-                            expenses.add(expense)
-                            Toast.makeText(this@MainActivity, "Expense added successfully", Toast.LENGTH_SHORT).show()
+                            if (existingExpense != null) {
+                                expenseDao.update(expenseToSave)
+                                val index = expenses.indexOfFirst { it.id == existingExpense.id }
+                                if (index != -1) expenses[index] = expenseToSave
+                            } else {
+                                expenseDao.insert(expenseToSave)
+                                expenses.add(expenseToSave)
+                            }
+                            Toast.makeText(this@MainActivity, "Expense saved", Toast.LENGTH_SHORT).show()
                             updateDisplayedExpenses(adapter, binding.calendarView.findFirstVisibleMonth()?.yearMonth ?: YearMonth.now())
                         } catch (e: Exception) {
-                            Toast.makeText(this@MainActivity, "Error adding expense: ${e.message}", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@MainActivity, "Error saving expense: ${e.message}", Toast.LENGTH_SHORT).show()
                         }
                     }
                 } else {
-                    Toast.makeText(this, "Please enter a valid amount", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Please enter a valid amount and category", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)
