@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "208539939305",
+    "project_id": "trex-9fc05",
+    "storage_bucket": "trex-9fc05.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:208539939305:android:ebbe9f56ed450c064ddb78",
+        "android_client_info": {
+          "package_name": "com.example.expencetracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwJDsRWK3SfYlCCL3m68PlTroXkVennxI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

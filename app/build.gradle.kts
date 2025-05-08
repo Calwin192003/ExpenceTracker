@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("com.google.gms.google-services")
     kotlin("kapt") // Use the Kotlin DSL for applying kapt
 }
 
@@ -59,4 +60,6 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     implementation("com.kizitonwose.calendar:view:2.4.0")
     implementation("com.google.android.material:material:1.11.0")
+    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
+    implementation("com.google.firebase:firebase-firestore")
 }
