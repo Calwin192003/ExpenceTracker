@@ -85,9 +85,14 @@ class MainActivity : AppCompatActivity() {
         db.collection("users").document(userId).collection("transactions")
             .get()
             .addOnSuccessListener { result ->
-                val fetched = result.mapNotNull { it.toObject(Expense::class.java) }
-                allExpenses = fetched.toMutableList()
+                val fetchedExpenses = result.mapNotNull { document ->
+                    val expense = document.toObject(Expense::class.java)
+                    expense.documentId = document.id
+                    expense
+                }
+                allExpenses = fetchedExpenses.toMutableList()
                 setupCalendar(allExpenses)
+
                 val currentMonth = binding.calendarView.findFirstVisibleMonth()?.yearMonth ?: YearMonth.now()
                 updateDisplayedExpenses(adapter, currentMonth)
             }
@@ -98,26 +103,23 @@ class MainActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun deleteExpenseFromFirestore(expense: Expense) {
-        db.collection("users")
-            .document(userId)
-            .collection("transactions")
-            .whereEqualTo("amount", expense.amount)
-            .whereEqualTo("note", expense.note)
-            .whereEqualTo("category", expense.category)
-            .whereEqualTo("date", expense.date)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                for (doc in snapshot.documents) {
-                    doc.reference.delete()
+        if (expense.documentId.isNotBlank()) {
+            db.collection("users")
+                .document(userId)
+                .collection("transactions")
+                .document(expense.documentId)
+                .delete()
+                .addOnSuccessListener {
+                    expenses.remove(expense)
+                    fetchExpensesFromFirestore()
+                    Toast.makeText(this, "Expense deleted", Toast.LENGTH_SHORT).show()
                 }
-                expenses.remove(expense)
-                adapter.notifyDataSetChanged()
-                Toast.makeText(this, "Expense deleted", Toast.LENGTH_SHORT).show()
-                updateDisplayedExpenses(adapter, binding.calendarView.findFirstVisibleMonth()?.yearMonth ?: YearMonth.now())
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, "Error deleting expense", Toast.LENGTH_SHORT).show()
-            }
+                .addOnFailureListener {
+                    Toast.makeText(this, "Error deleting expense", Toast.LENGTH_SHORT).show()
+                }
+        } else {
+            Toast.makeText(this, "Document ID not found", Toast.LENGTH_SHORT).show()
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -148,6 +150,7 @@ class MainActivity : AppCompatActivity() {
 
             if (categoryMatch != null) {
                 categoryMatch.isChecked = true
+                dialogBinding.editTextCustomCategory.visibility = View.GONE
             } else {
                 dialogBinding.radioGroupCategory.check(R.id.radioAddCategory)
                 dialogBinding.editTextCustomCategory.visibility = View.VISIBLE
@@ -169,26 +172,49 @@ class MainActivity : AppCompatActivity() {
                     selectedCategory = dialogBinding.editTextCustomCategory.text.toString().ifBlank { null }
                 }
 
-                val finalDate = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                val finalDate = preSelectedDate ?: LocalDate.now()
+                val selectedDateMillis = finalDate.atStartOfDay(ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli()
 
                 if (amount != null && selectedCategory != null) {
-                    val expense = Expense(
+                    val documentId = existingExpense?.documentId ?: ""
+                    val expenseToSave = Expense(
+                        documentId = documentId,
                         amount = amount,
                         note = note,
                         category = selectedCategory,
-                        date = finalDate
+                        date = selectedDateMillis
                     )
-                    db.collection("users").document(userId).collection("transactions")
-                        .add(expense)
-                        .addOnSuccessListener {
-                            fetchExpensesFromFirestore()
-                            Toast.makeText(this, "Expense saved", Toast.LENGTH_SHORT).show()
-                        }
-                        .addOnFailureListener {
-                            Toast.makeText(this, "Error saving expense", Toast.LENGTH_SHORT).show()
-                        }
+
+                    if (documentId.isNotEmpty()) {
+                        db.collection("users")
+                            .document(userId)
+                            .collection("transactions")
+                            .document(documentId)
+                            .set(expenseToSave)
+                            .addOnSuccessListener {
+                                Toast.makeText(this, "Expense updated", Toast.LENGTH_SHORT).show()
+                                fetchExpensesFromFirestore()
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(this, "Error updating expense: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                    } else {
+                        db.collection("users")
+                            .document(userId)
+                            .collection("transactions")
+                            .add(expenseToSave)
+                            .addOnSuccessListener {
+                                Toast.makeText(this, "Expense saved", Toast.LENGTH_SHORT).show()
+                                fetchExpensesFromFirestore()
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(this, "Error saving expense: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                    }
                 } else {
-                    Toast.makeText(this, "Please enter valid data", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Please enter a valid amount and category", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)
